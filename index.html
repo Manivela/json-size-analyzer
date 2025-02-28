@@ -1,511 +1,546 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Local JSON Size Analyzer</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        h1, h2, h3 {
-            color: #2c3e50;
-        }
-        
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        color: #2c3e50;
+      }
+
+      .container {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .input-panel {
+        flex: 1;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+      }
+
+      #json-input {
+        width: 100%;
+        height: 300px;
+        font-family: monospace;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: vertical;
+        box-sizing: border-box;
+        max-width: 100%;
+      }
+
+      .button-row {
+        margin: 10px 0;
+      }
+
+      button {
+        background-color: #4caf50;
+        border: none;
+        color: white;
+        padding: 10px 15px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      .results {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 20px;
+        margin-top: 20px;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .summary-stats {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .stat-box {
+        flex: 1;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        text-align: center;
+      }
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+      }
+
+      .tree-container {
+        overflow: auto;
+        margin-top: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+      }
+
+      .tree-item {
+        margin: 2px 0;
+        padding: 6px;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+      }
+
+      .tree-item:hover {
+        background-color: #f0f0f0;
+      }
+
+      .key {
+        color: #2c3e50;
+        font-weight: bold;
+      }
+
+      .value-string {
+        color: #c0392b;
+      }
+
+      .value-number {
+        color: #3498db;
+      }
+
+      .value-boolean {
+        color: #9b59b6;
+      }
+
+      .value-null {
+        color: #95a5a6;
+        font-style: italic;
+      }
+
+      .size-info {
+        color: #7f8c8d;
+        font-size: 0.9em;
+        margin-left: 10px;
+      }
+
+      .error {
+        color: #e74c3c;
+        padding: 10px;
+        background-color: #fadbd8;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+
+      .expandable {
+        cursor: pointer;
+      }
+
+      .children {
+        margin-left: 20px;
+      }
+
+      #file-input {
+        display: none;
+      }
+
+      .file-input-label {
+        display: inline-block;
+        background-color: #3498db;
+        color: white;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+
+      .file-input-label:hover {
+        background-color: #2980b9;
+      }
+
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .progress-bar {
+        height: 4px;
+        background-color: #3498db;
+        width: 0%;
+        transition: width 0.3s;
+      }
+
+      @media (max-width: 768px) {
         .container {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
+          flex-direction: column;
         }
-        
-        .input-panel {
-            flex: 1;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-        }
-        
-        #json-input {
-            width: 100%;
-            height: 300px;
-            font-family: monospace;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            resize: vertical;
-        }
-        
-        .button-row {
-            margin: 10px 0;
-        }
-        
-        button {
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            padding: 10px 15px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        .results {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .summary-stats {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-box {
-            flex: 1;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .tree-container {
-            overflow: auto;
-            margin-top: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-        }
-        
-        .tree-item {
-            margin: 2px 0;
-            padding: 6px;
-            border-radius: 4px;
-            transition: background-color 0.2s;
-        }
-        
-        .tree-item:hover {
-            background-color: #f0f0f0;
-        }
-        
-        .key {
-            color: #2c3e50;
-            font-weight: bold;
-        }
-        
-        .value-string {
-            color: #c0392b;
-        }
-        
-        .value-number {
-            color: #3498db;
-        }
-        
-        .value-boolean {
-            color: #9b59b6;
-        }
-        
-        .value-null {
-            color: #95a5a6;
-            font-style: italic;
-        }
-        
-        .size-info {
-            color: #7f8c8d;
-            font-size: 0.9em;
-            margin-left: 10px;
-        }
-        
-        .error {
-            color: #e74c3c;
-            padding: 10px;
-            background-color: #fadbd8;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-        
-        .expandable {
-            cursor: pointer;
-        }
-        
-        .children {
-            margin-left: 20px;
-        }
-        
-        #file-input {
-            display: none;
-        }
-        
-        .file-input-label {
-            display: inline-block;
-            background-color: #3498db;
-            color: white;
-            padding: 10px 15px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-        
-        .file-input-label:hover {
-            background-color: #2980b9;
-        }
-        
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        
-        .progress-bar {
-            height: 4px;
-            background-color: #3498db;
-            width: 0%;
-            transition: width 0.3s;
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Local JSON Size Analyzer</h1>
-    <p>Analyze the size of your JSON data without sending it to any external servers. All processing happens in your browser.</p>
-    
+    <p>
+      Analyze the size of your JSON data without sending it to any external
+      servers. All processing happens in your browser.
+    </p>
+
     <div class="input-panel">
-        <div class="toolbar">
-            <label for="file-input" class="file-input-label">Load JSON File</label>
-            <input type="file" id="file-input" accept=".json,application/json">
-            <button id="analyze-btn">Analyze JSON</button>
-            <button id="clear-btn">Clear</button>
-        </div>
-        <div class="progress-bar" id="progress-bar"></div>
-        <textarea id="json-input" placeholder="Paste your JSON data here or load a file"></textarea>
-        <div id="error-message" class="error hidden"></div>
+      <div class="toolbar">
+        <label for="file-input" class="file-input-label">Load JSON File</label>
+        <input type="file" id="file-input" accept=".json,application/json" />
+        <button id="analyze-btn">Analyze JSON</button>
+        <button id="clear-btn">Clear</button>
+      </div>
+      <div class="progress-bar" id="progress-bar"></div>
+      <textarea
+        id="json-input"
+        placeholder="Paste your JSON data here or load a file"
+      ></textarea>
+      <div id="error-message" class="error hidden"></div>
     </div>
-    
+
     <div id="results" class="results hidden">
-        <h2>Analysis Results</h2>
-        
-        <div class="summary-stats">
-            <div class="stat-box">
-                <div>Total Size</div>
-                <div class="stat-value" id="total-size">0 B</div>
-            </div>
-            <div class="stat-box">
-                <div>Objects</div>
-                <div class="stat-value" id="object-count">0</div>
-            </div>
-            <div class="stat-box">
-                <div>Arrays</div>
-                <div class="stat-value" id="array-count">0</div>
-            </div>
-            <div class="stat-box">
-                <div>Properties</div>
-                <div class="stat-value" id="property-count">0</div>
-            </div>
+      <h2>Analysis Results</h2>
+
+      <div class="summary-stats">
+        <div class="stat-box">
+          <div>Total Size</div>
+          <div class="stat-value" id="total-size">0 B</div>
         </div>
-        
-        <h3>Size Breakdown</h3>
-        <div id="tree-view" class="tree-container"></div>
+        <div class="stat-box">
+          <div>Objects</div>
+          <div class="stat-value" id="object-count">0</div>
+        </div>
+        <div class="stat-box">
+          <div>Arrays</div>
+          <div class="stat-value" id="array-count">0</div>
+        </div>
+        <div class="stat-box">
+          <div>Properties</div>
+          <div class="stat-value" id="property-count">0</div>
+        </div>
+      </div>
+
+      <h3>Size Breakdown</h3>
+      <div id="tree-view" class="tree-container"></div>
     </div>
-    
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const jsonInput = document.getElementById('json-input');
-            const analyzeBtn = document.getElementById('analyze-btn');
-            const clearBtn = document.getElementById('clear-btn');
-            const fileInput = document.getElementById('file-input');
-            const results = document.getElementById('results');
-            const errorMessage = document.getElementById('error-message');
-            const totalSizeElement = document.getElementById('total-size');
-            const objectCountElement = document.getElementById('object-count');
-            const arrayCountElement = document.getElementById('array-count');
-            const propertyCountElement = document.getElementById('property-count');
-            const treeView = document.getElementById('tree-view');
-            const progressBar = document.getElementById('progress-bar');
-            
-            let stats = {
-                objectCount: 0,
-                arrayCount: 0,
-                propertyCount: 0
-            };
-            
-            analyzeBtn.addEventListener('click', function() {
-                const jsonStr = jsonInput.value.trim();
-                if (!jsonStr) {
-                    showError('Please enter JSON data');
-                    return;
-                }
-                
-                try {
-                    errorMessage.classList.add('hidden');
-                    const jsonData = JSON.parse(jsonStr);
-                    analyzeJson(jsonData);
-                } catch (e) {
-                    showError('Invalid JSON: ' + e.message);
-                }
-            });
-            
-            clearBtn.addEventListener('click', function() {
-                jsonInput.value = '';
-                results.classList.add('hidden');
-                errorMessage.classList.add('hidden');
-            });
-            
-            fileInput.addEventListener('change', function(e) {
-                if (e.target.files.length === 0) return;
-                
-                const file = e.target.files[0];
-                if (file.size > 50 * 1024 * 1024) { // 50MB limit
-                    showError('File is too large (max 50MB)');
-                    return;
-                }
-                
-                const reader = new FileReader();
-                
-                reader.onprogress = function(event) {
-                    if (event.lengthComputable) {
-                        const percentComplete = (event.loaded / event.total) * 100;
-                        progressBar.style.width = percentComplete + '%';
-                    }
-                };
-                
-                reader.onload = function(event) {
-                    try {
-                        const jsonStr = event.target.result;
-                        jsonInput.value = jsonStr;
-                        const jsonData = JSON.parse(jsonStr);
-                        analyzeJson(jsonData);
-                        progressBar.style.width = '0%';
-                    } catch (e) {
-                        showError('Invalid JSON in file: ' + e.message);
-                        progressBar.style.width = '0%';
-                    }
-                };
-                
-                reader.onerror = function() {
-                    showError('Error reading file');
-                    progressBar.style.width = '0%';
-                };
-                
-                reader.readAsText(file);
-            });
-            
-            function showError(message) {
-                errorMessage.textContent = message;
-                errorMessage.classList.remove('hidden');
-                results.classList.add('hidden');
+      document.addEventListener("DOMContentLoaded", function () {
+        const jsonInput = document.getElementById("json-input");
+        const analyzeBtn = document.getElementById("analyze-btn");
+        const clearBtn = document.getElementById("clear-btn");
+        const fileInput = document.getElementById("file-input");
+        const results = document.getElementById("results");
+        const errorMessage = document.getElementById("error-message");
+        const totalSizeElement = document.getElementById("total-size");
+        const objectCountElement = document.getElementById("object-count");
+        const arrayCountElement = document.getElementById("array-count");
+        const propertyCountElement = document.getElementById("property-count");
+        const treeView = document.getElementById("tree-view");
+        const progressBar = document.getElementById("progress-bar");
+
+        let stats = {
+          objectCount: 0,
+          arrayCount: 0,
+          propertyCount: 0,
+        };
+
+        // Add a variable to store total size in bytes
+        let totalSizeBytes = 0;
+
+        analyzeBtn.addEventListener("click", function () {
+          const jsonStr = jsonInput.value.trim();
+          if (!jsonStr) {
+            showError("Please enter JSON data");
+            return;
+          }
+
+          try {
+            errorMessage.classList.add("hidden");
+            const jsonData = JSON.parse(jsonStr);
+            analyzeJson(jsonData);
+          } catch (e) {
+            showError("Invalid JSON: " + e.message);
+          }
+        });
+
+        clearBtn.addEventListener("click", function () {
+          jsonInput.value = "";
+          results.classList.add("hidden");
+          errorMessage.classList.add("hidden");
+        });
+
+        fileInput.addEventListener("change", function (e) {
+          if (e.target.files.length === 0) return;
+
+          const file = e.target.files[0];
+          if (file.size > 50 * 1024 * 1024) {
+            // 50MB limit
+            showError("File is too large (max 50MB)");
+            return;
+          }
+
+          const reader = new FileReader();
+
+          reader.onprogress = function (event) {
+            if (event.lengthComputable) {
+              const percentComplete = (event.loaded / event.total) * 100;
+              progressBar.style.width = percentComplete + "%";
             }
-            
-            function formatBytes(bytes, decimals = 2) {
-                if (bytes === 0) return '0 B';
-                
-                const k = 1024;
-                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(k));
-                
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
+          };
+
+          reader.onload = function (event) {
+            try {
+              const jsonStr = event.target.result;
+              jsonInput.value = jsonStr;
+              const jsonData = JSON.parse(jsonStr);
+              analyzeJson(jsonData);
+              progressBar.style.width = "0%";
+            } catch (e) {
+              showError("Invalid JSON in file: " + e.message);
+              progressBar.style.width = "0%";
             }
-            
-            function calculateSize(value) {
-                // Convert to string for measurement
-                const str = JSON.stringify(value);
-                // Get the UTF-16 size (in bytes) - what JavaScript uses
-                return str.length * 2;
+          };
+
+          reader.onerror = function () {
+            showError("Error reading file");
+            progressBar.style.width = "0%";
+          };
+
+          reader.readAsText(file);
+        });
+
+        function showError(message) {
+          errorMessage.textContent = message;
+          errorMessage.classList.remove("hidden");
+          results.classList.add("hidden");
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+          if (bytes === 0) return "0 B";
+
+          const k = 1024;
+          const sizes = ["B", "KB", "MB", "GB", "TB"];
+          const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+          return (
+            parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) +
+            " " +
+            sizes[i]
+          );
+        }
+
+        function calculateSize(value) {
+          // Convert to string for measurement
+          const str = JSON.stringify(value);
+          // Get the UTF-16 size (in bytes) - what JavaScript uses
+          return str.length * 2;
+        }
+
+        function analyzeJson(data) {
+          stats = {
+            objectCount: 0,
+            arrayCount: 0,
+            propertyCount: 0,
+          };
+
+          const tree = buildTree("root", data, true);
+
+          // Store the total size in bytes
+          totalSizeBytes = tree.size;
+
+          // Update summary statistics
+          totalSizeElement.textContent = formatBytes(tree.size);
+          objectCountElement.textContent = stats.objectCount;
+          arrayCountElement.textContent = stats.arrayCount;
+          propertyCountElement.textContent = stats.propertyCount;
+
+          // Render tree view
+          treeView.innerHTML = "";
+          renderTree(tree, treeView);
+
+          // Show results
+          results.classList.remove("hidden");
+        }
+
+        function buildTree(key, value, isRoot = false) {
+          const node = {
+            key: key,
+            type: typeof value,
+            children: [],
+            isArray: Array.isArray(value),
+            isObject: value !== null && typeof value === "object",
+            value: value,
+            size: 0,
+          };
+
+          if (isRoot) {
+            node.size = calculateSize(value);
+            if (node.isObject) {
+              if (node.isArray) {
+                stats.arrayCount++;
+              } else {
+                stats.objectCount++;
+              }
             }
-            
-            function analyzeJson(data) {
-                stats = {
-                    objectCount: 0,
-                    arrayCount: 0,
-                    propertyCount: 0
-                };
-                
-                const tree = buildTree('root', data, true);
-                
-                // Update summary statistics
-                totalSizeElement.textContent = formatBytes(tree.size);
-                objectCountElement.textContent = stats.objectCount;
-                arrayCountElement.textContent = stats.arrayCount;
-                propertyCountElement.textContent = stats.propertyCount;
-                
-                // Render tree view
-                treeView.innerHTML = '';
-                renderTree(tree, treeView);
-                
-                // Show results
-                results.classList.remove('hidden');
+          } else {
+            // Calculate the size of this property (key + value)
+            // For keys, we add the key length and the colon and quotes
+            const keySize = key.length * 2 + 4; // "key": = key.length + 4 characters
+
+            // Add separator for arrays/objects
+            const separatorSize = 1; // comma
+
+            if (node.isObject) {
+              if (node.isArray) {
+                stats.arrayCount++;
+              } else {
+                stats.objectCount++;
+              }
+              // For arrays and objects, add brackets
+              node.size = keySize + separatorSize + calculateSize(value);
+            } else {
+              stats.propertyCount++;
+              node.size = keySize + separatorSize + calculateSize(value);
             }
-            
-            function buildTree(key, value, isRoot = false) {
-                const node = {
-                    key: key,
-                    type: typeof value,
-                    children: [],
-                    isArray: Array.isArray(value),
-                    isObject: value !== null && typeof value === 'object',
-                    value: value,
-                    size: 0
-                };
-                
-                if (isRoot) {
-                    node.size = calculateSize(value);
-                    if (node.isObject) {
-                        if (node.isArray) {
-                            stats.arrayCount++;
-                        } else {
-                            stats.objectCount++;
-                        }
-                    }
-                } else {
-                    // Calculate the size of this property (key + value)
-                    // For keys, we add the key length and the colon and quotes
-                    const keySize = key.length * 2 + 4; // "key": = key.length + 4 characters
-                    
-                    // Add separator for arrays/objects
-                    const separatorSize = 1; // comma
-                    
-                    if (node.isObject) {
-                        if (node.isArray) {
-                            stats.arrayCount++;
-                        } else {
-                            stats.objectCount++;
-                        }
-                        // For arrays and objects, add brackets
-                        node.size = keySize + separatorSize + calculateSize(value);
-                    } else {
-                        stats.propertyCount++;
-                        node.size = keySize + separatorSize + calculateSize(value);
-                    }
+          }
+
+          // Process children for objects and arrays
+          if (node.isObject) {
+            if (node.isArray) {
+              // For arrays
+              for (let i = 0; i < value.length; i++) {
+                const childNode = buildTree(i.toString(), value[i]);
+                node.children.push(childNode);
+              }
+            } else {
+              // For objects
+              for (const childKey in value) {
+                if (value.hasOwnProperty(childKey)) {
+                  const childNode = buildTree(childKey, value[childKey]);
+                  node.children.push(childNode);
                 }
-                
-                // Process children for objects and arrays
-                if (node.isObject) {
-                    if (node.isArray) {
-                        // For arrays
-                        for (let i = 0; i < value.length; i++) {
-                            const childNode = buildTree(i.toString(), value[i]);
-                            node.children.push(childNode);
-                        }
-                    } else {
-                        // For objects
-                        for (const childKey in value) {
-                            if (value.hasOwnProperty(childKey)) {
-                                const childNode = buildTree(childKey, value[childKey]);
-                                node.children.push(childNode);
-                            }
-                        }
-                    }
-                    
-                    // Sort children by size (largest first)
-                    node.children.sort((a, b) => b.size - a.size);
-                }
-                
-                return node;
+              }
             }
-            
-            function renderTree(node, container, level = 0) {
-                const itemElement = document.createElement('div');
-                itemElement.className = 'tree-item';
-                
-                // Determine the type display
-                let valueDisplay = '';
-                let valueClass = '';
-                
-                if (node.isObject) {
-                    if (node.isArray) {
-                        valueDisplay = 'Array[' + node.value.length + ']';
-                        valueClass = 'value-array';
-                    } else {
-                        valueDisplay = 'Object{' + Object.keys(node.value).length + '}';
-                        valueClass = 'value-object';
-                    }
-                } else if (node.type === 'string') {
-                    valueDisplay = '"' + (node.value.length > 50 ? node.value.substring(0, 47) + '...' : node.value) + '"';
-                    valueClass = 'value-string';
-                } else if (node.type === 'number') {
-                    valueDisplay = node.value;
-                    valueClass = 'value-number';
-                } else if (node.type === 'boolean') {
-                    valueDisplay = node.value;
-                    valueClass = 'value-boolean';
-                } else if (node.value === null) {
-                    valueDisplay = 'null';
-                    valueClass = 'value-null';
-                }
-                
-                const hasChildren = node.children.length > 0;
-                let content = '';
-                
-                if (level === 0) {
-                    // Root node
-                    content = `
+
+            // Sort children by size (largest first)
+            node.children.sort((a, b) => b.size - a.size);
+          }
+
+          return node;
+        }
+
+        function renderTree(node, container, level = 0) {
+          const itemElement = document.createElement("div");
+          itemElement.className = "tree-item";
+
+          // Determine the type display
+          let valueDisplay = "";
+          let valueClass = "";
+
+          if (node.isObject) {
+            if (node.isArray) {
+              valueDisplay = "Array[" + node.value.length + "]";
+              valueClass = "value-array";
+            } else {
+              valueDisplay = "Object{" + Object.keys(node.value).length + "}";
+              valueClass = "value-object";
+            }
+          } else if (node.type === "string") {
+            valueDisplay =
+              '"' +
+              (node.value.length > 50
+                ? node.value.substring(0, 47) + "..."
+                : node.value) +
+              '"';
+            valueClass = "value-string";
+          } else if (node.type === "number") {
+            valueDisplay = node.value;
+            valueClass = "value-number";
+          } else if (node.type === "boolean") {
+            valueDisplay = node.value;
+            valueClass = "value-boolean";
+          } else if (node.value === null) {
+            valueDisplay = "null";
+            valueClass = "value-null";
+          }
+
+          const hasChildren = node.children.length > 0;
+          let content = "";
+
+          if (level === 0) {
+            // Root node
+            content = `
                         <span class="${valueClass} expandable">${valueDisplay}</span>
                         <span class="size-info">${formatBytes(node.size)}</span>
                     `;
-                } else {
-                    content = `
+          } else {
+            // Calculate percentage using raw byte values
+            const percentage = ((node.size / totalSizeBytes) * 100).toFixed(2);
+
+            content = `
                         <span class="key">${node.key}:</span>
-                        <span class="${valueClass}${hasChildren ? ' expandable' : ''}">${valueDisplay}</span>
-                        <span class="size-info">${formatBytes(node.size)} (${(node.size / parseInt(totalSizeElement.textContent)).toFixed(2)}%)</span>
+                        <span class="${valueClass}${
+              hasChildren ? " expandable" : ""
+            }">${valueDisplay}</span>
+                        <span class="size-info">${formatBytes(
+                          node.size
+                        )} (${percentage}%)</span>
                     `;
-                }
-                
-                itemElement.innerHTML = content;
-                
-                if (hasChildren) {
-                    const childrenContainer = document.createElement('div');
-                    childrenContainer.className = 'children';
-                    
-                    // Initially hide children except for root
-                    if (level > 0) {
-                        childrenContainer.style.display = 'none';
-                    }
-                    
-                    // Add expand/collapse functionality
-                    const expandableElement = itemElement.querySelector('.expandable');
-                    expandableElement.addEventListener('click', function() {
-                        childrenContainer.style.display = childrenContainer.style.display === 'none' ? 'block' : 'none';
-                    });
-                    
-                    // Render children
-                    node.children.forEach(child => {
-                        renderTree(child, childrenContainer, level + 1);
-                    });
-                    
-                    itemElement.appendChild(childrenContainer);
-                }
-                
-                container.appendChild(itemElement);
+          }
+
+          itemElement.innerHTML = content;
+
+          if (hasChildren) {
+            const childrenContainer = document.createElement("div");
+            childrenContainer.className = "children";
+
+            // Initially hide children except for root
+            if (level > 0) {
+              childrenContainer.style.display = "none";
             }
-        });
+
+            // Add expand/collapse functionality
+            const expandableElement = itemElement.querySelector(".expandable");
+            expandableElement.addEventListener("click", function () {
+              childrenContainer.style.display =
+                childrenContainer.style.display === "none" ? "block" : "none";
+            });
+
+            // Render children
+            node.children.forEach((child) => {
+              renderTree(child, childrenContainer, level + 1);
+            });
+
+            itemElement.appendChild(childrenContainer);
+          }
+
+          container.appendChild(itemElement);
+        }
+      });
     </script>
-</body>
+  </body>
 </html>
